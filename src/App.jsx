@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const highlights = [
   'Residential and commercial service',
   'Reliable timelines and clean workmanship',
@@ -36,6 +38,39 @@ const aboutPoints = [
 ];
 
 export default function App() {
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [status, setStatus] = useState('idle'); // idle | sending | success | error
+
+  function handleChange(e) {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setStatus('sending');
+
+    fetch('https://formsubmit.co/ajax/info@primexdrywall.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+        _subject: 'New Inquiry from Primex Dry Wall Website',
+        _captcha: 'false',
+        _template: 'table',
+      }),
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then(() => {
+        setStatus('success');
+        setFormData({ name: '', email: '', message: '' });
+      })
+      .catch(() => {
+        setStatus('error');
+      });
+  }
+
   return (
     <div className="site-shell">
       <header className="site-header">
@@ -134,19 +169,49 @@ export default function App() {
               <div className="section-label">Contact</div>
               <h2>Tell us about your project</h2>
               <p>
-                This Vite version is structured for straightforward deployment on Vercel, with a standard React entry point and
-                clean static hosting output.
+                Reach out to discuss your project. Fill in the form and we'll get back to you promptly.
               </p>
             </div>
 
             <div className="contact-card">
-              <form className="contact-form">
-                <input type="text" placeholder="Full name" />
-                <input type="email" placeholder="Email address" />
-                <textarea placeholder="Project details" rows="6" />
-                <button type="submit" className="button button-primary button-full">
-                  Send Inquiry
+              <form className="contact-form" onSubmit={handleSubmit}>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Full name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email address"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+                <textarea
+                  name="message"
+                  placeholder="Project details"
+                  rows="6"
+                  value={formData.message}
+                  onChange={handleChange}
+                  required
+                />
+                <button
+                  type="submit"
+                  className="button button-primary button-full"
+                  disabled={status === 'sending'}
+                >
+                  {status === 'sending' ? 'Sending...' : 'Send Inquiry'}
                 </button>
+                {status === 'success' && (
+                  <p className="form-status form-success">Thank you! Your inquiry has been sent.</p>
+                )}
+                {status === 'error' && (
+                  <p className="form-status form-error">Something went wrong. Please try again.</p>
+                )}
               </form>
             </div>
           </div>
